@@ -22,11 +22,9 @@ Projetar uma solução de sistema integrado para a indústria farmacêutica, cob
 
 ## Integrantes
 
-- [Nome completo] — [papel no grupo]
-- [Nome completo] — [papel no grupo]
-- [Nome completo] — [papel no grupo]
-- [Nome completo] — [papel no grupo]
-
+- Isabella Cavalcanti
+- Nicole Molina
+- Giulia Cavalheri
 ## Estrutura do repositório
 
 ```
