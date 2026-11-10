@@ -30,7 +30,7 @@ git push
 |-------|-------------|
 | grupo-01 | Isabella Cavalcanti, Giulia Cavalheri, Nicole Molina |
 | grupo-02 | Arthur Figueredo, Arthur Silva, Bruno Luongo, Lucas Giraldo |
-| grupo-03 | Guilherme Martineli, Júlia lEITE furna, Leonardo de Oliveira, Leticia do Nascimento, Otávio Barbosa, Thomás Cavalcanti |
+| grupo-03 | Guilherme Martineli, Júlia Leite Furlan, Leonardo de Oliveira, Leticia do Nascimento, Otávio Barbosa, Thomás Cavalcanti |
 | grupo-04 | — |
 | grupo-05 | — |
 
