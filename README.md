@@ -32,10 +32,10 @@ git push
 | grupo-02 | Arthur Figueredo, Arthur Silva, Bruno Luongo, Lucas Giraldo |
 | grupo-03 | Guilherme Martineli, Júlia Leite Furlan, Leonardo de Oliveira, Leticia do Nascimento, Otávio Barbosa, Thomás Cavalcanti |
 | grupo-04 | Samuel W Cardoso, Luan Xavier|
-| grupo-05 | — |
+| grupo-05 | Matheus Gomes Costa, Gabriel Anjos Bottino, Lin Dylon Ribeiro, Jose Victor Oliveira, Heitor Brisola, Vitor Hugo Contreras |
 
 ## Regras gerais
 
 - Cada grupo só deve alterar arquivos dentro da própria pasta.
 - Escreva mensagens de commit claras, descrevendo o que foi feito.
-- Em caso de dúvida sobre Git, avise a representante de sala.
+- Em caso de dúvida sobre Git, me avise representante de sala.
