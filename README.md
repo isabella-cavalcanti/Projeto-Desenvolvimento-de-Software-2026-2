@@ -28,7 +28,7 @@ git push
 
 | Grupo | Integrantes |
 |-------|-------------|
-| grupo-01 | — |
+| grupo-01 | Isabella Cavalcanti, Giulia Cavalheri, Nicole Molina |
 | grupo-02 | — |
 | grupo-03 | — |
 | grupo-04 | — |
