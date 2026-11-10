@@ -59,8 +59,8 @@ Projetar uma solução de sistema integrado para a indústria farmacêutica, cob
 - [x] Implementação de referência das classes do domínio em Python (sem front-end)
 - [x] Proposta de arquitetura de sistema (camadas, tecnologias, segurança/escalabilidade/conformidade)
 - [x] Relatório final (padrão ABNT, com sumário e referências)
-- [x] Slides e roteiro prontos para a gravação
-- [ ] Vídeo gravado e link publicado
+- [x] Slides
+- 
 
 ## Vídeo de apresentação
 
