@@ -34,6 +34,8 @@ git push
 | grupo-04 | Samuel W Cardoso, Luan Xavier|
 | grupo-05 | Matheus Gomes Costa, Gabriel Anjos Bottino, Lin Dylon Ribeiro, Jose Victor Oliveira, Heitor Brisola, Vitor Hugo Contreras |
 | grupo-06 | Eduardo Lameu, Kawe Devechi, Miguel Augusto |
+| grupo-07 | Filipe Bernard, Júlio Freire, Miguel Soares |
+
 ## Regras gerais
 
 - Cada grupo só deve alterar arquivos dentro da própria pasta.
