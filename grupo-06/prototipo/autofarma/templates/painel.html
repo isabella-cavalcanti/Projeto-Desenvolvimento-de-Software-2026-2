@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "_macros.html" import selo, assinatura %}
+{% block conteudo %}
+<h1>Painel da linha</h1>
+
+<section class="cartao simulador">
+  <div>
+    <h2>Simulador de sensores</h2>
+    <p class="sub">Cada ciclo envia uma leitura de cada parâmetro da etapa em execução. Ninguém opera a linha: o sistema decide sozinho até precisar de uma pessoa.</p>
+  </div>
+  <div class="acoes">
+    <form method="post" action="{{ url_for('web.simular_ciclo') }}"><button>Executar um ciclo</button></form>
+    <form method="post" action="{{ url_for('web.simular_anomalia') }}">
+      <button class="perigo" {{ 'disabled' if anomalia }}>{{ 'Anomalia armada' if anomalia else 'Injetar anomalia' }}</button></form>
+    <label class="auto"><input type="checkbox" id="auto"> Modo automático</label>
+  </div>
+</section>
+
+{% for lote in em_linha %}
+<section class="cartao">
+  <h2>Lote {{ lote.codigo }} {{ selo(lote.status) }}</h2>
+  <p class="sub">{{ lote.produto.nome }} · ordem {{ lote.ordem.numero }}</p>
+  <ol class="etapas">
+    {% for e in lote.etapas %}
+    <li class="e-{{ e.status.name|lower }}">
+      <strong>{{ e.etapa_padrao.nome }}</strong>
+      <span>{{ e.status.value }}{% if e.status.name == 'EM_EXECUCAO' %} · ciclo {{ e.ciclos }}/{{ e.etapa_padrao.ciclos_necessarios }}{% endif %}
+        {% if e.reprocessos %} · {{ e.reprocessos }} reprocesso(s){% endif %}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% else %}
+<section class="cartao vazio">Nenhum lote na linha. Crie uma ordem de produção em <a href="{{ url_for('web.ordens') }}">Ordens</a>.</section>
+{% endfor %}
+
+<section class="cartao" id="intervencoes">
+  <h2>Fila de intervenções</h2>
+  {% for i in pendentes %}
+  <article class="intervencao">
+    <header>
+      <strong>{{ i.lote.codigo }} · {{ i.tipo.value }}</strong> {{ selo(i.status) }}
+      <span class="sub">aberta às {{ i.aberta_em.strftime('%H:%M:%S') }} pelo sistema</span>
+    </header>
+    <p>{{ i.motivo }}</p>
+    {% if i.tipo.name == 'DESVIO_PROCESSO' %}
+      {% if usuario.perfil == Perfil.SUPERVISOR %}
+      <form method="post" action="{{ url_for('web.resolver_intervencao', id=i.id) }}" class="linha">
+        <select name="decisao">
+          <option value="RETOMAR">{{ Decisao.RETOMAR.value }}</option>
+          <option value="REPROCESSAR">{{ Decisao.REPROCESSAR.value }}</option>
+          <option value="SEGREGAR">{{ Decisao.SEGREGAR.value }}</option>
+        </select>
+        {{ assinatura() }}
+        <button>Assinar decisão</button>
+      </form>
+      {% else %}
+      <p class="nota">A linha está pausada. Somente o Supervisor de Produção pode decidir este desvio (RN06).</p>
+      {% endif %}
+    {% else %}
+      <p class="nota">O sistema retoma este lote sozinho quando houver insumo aprovado em estoque.</p>
+    {% endif %}
+  </article>
+  {% else %}
+  <p class="vazio">Nenhuma intervenção pendente. A linha segue sob condução do sistema.</p>
+  {% endfor %}
+</section>
+
+<div class="duas">
+<section class="cartao">
+  <h2>Leituras recentes</h2>
+  <table>
+    <tr><th>Hora</th><th>Lote</th><th>Parâmetro</th><th class="num">Valor</th><th>Especificação</th><th>Classificação</th></tr>
+    {% for l in leituras %}
+    <tr>
+      <td>{{ l.registrada_em.strftime('%H:%M:%S') }}</td><td>{{ l.etapa.lote.codigo }}</td>
+      <td>{{ l.parametro.nome }}</td><td class="num">{{ l.valor|numero }} {{ l.parametro.unidade }}</td>
+      <td>{{ l.parametro.espec_min|numero }} a {{ l.parametro.espec_max|numero }}</td>
+      <td>{{ selo(l.classificacao) }}</td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="vazio">Sem leituras ainda.</td></tr>{% endfor %}
+  </table>
+</section>
+<section class="cartao">
+  <h2>Alertas do sistema</h2>
+  <ul class="alertas">
+    {% for a in alertas %}<li><span class="sub">{{ a.criado_em.strftime('%H:%M') }}</span> {{ a.mensagem }}</li>
+    {% else %}<li class="vazio">Sem alertas.</li>{% endfor %}
+  </ul>
+</section>
+</div>
+
+<script>
+  // Modo automático: chama o motor a cada 2 s e recarrega o painel.
+  const caixa = document.getElementById('auto');
+  caixa.checked = sessionStorage.getItem('auto') === '1';
+  caixa.addEventListener('change', () => { sessionStorage.setItem('auto', caixa.checked ? '1' : '0'); });
+  setInterval(async () => {
+    if (!caixa.checked || ['INPUT', 'SELECT'].includes(document.activeElement.tagName)) return;
+    await fetch("{{ url_for('api.ciclo') }}", {method: 'POST'});
+    location.reload();
+  }, 2000);
+</script>
+{% endblock %}

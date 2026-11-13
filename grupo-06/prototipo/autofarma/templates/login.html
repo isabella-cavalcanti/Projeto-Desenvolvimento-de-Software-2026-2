@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<section class="cartao login">
+  <h1>AutoFarma</h1>
+  <p class="sub">Gestão autônoma de linha de produção farmacêutica com intervenção humana</p>
+  <form method="post">
+    <label>Usuário
+      <select name="login">
+        {% for u in usuarios %}<option value="{{ u.login }}">{{ u.login }} ({{ u.perfil.value }})</option>{% endfor %}
+      </select>
+    </label>
+    <label>Senha <input name="senha" type="password" required autofocus></label>
+    <button>Entrar</button>
+  </form>
+  <p class="nota">Protótipo acadêmico. Todos os usuários de demonstração usam a senha <code>1234</code>.</p>
+</section>
+{% endblock %}

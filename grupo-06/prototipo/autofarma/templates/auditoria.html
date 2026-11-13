@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Trilha de auditoria</h1>
+<p class="aviso {{ 'ok' if integra else 'erro' }}">
+  {% if integra %}Cadeia íntegra: os {{ total }} registros foram conferidos pelo encadeamento de hash SHA-256.
+  {% else %}Cadeia violada: o registro nº {{ violado }} foi alterado fora da aplicação.{% endif %}
+</p>
+<section class="cartao">
+  <table>
+    <tr><th>Nº</th><th>Data e hora</th><th>Autor</th><th>Ação</th><th>Entidade</th><th>Detalhe</th><th>Hash</th></tr>
+    {% for r in registros %}
+    <tr><td>{{ r.id }}</td><td>{{ r.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+      <td class="{{ 'sistema' if r.autor == 'SISTEMA' }}">{{ r.autor }}</td><td>{{ r.acao }}</td>
+      <td>{{ r.entidade }}</td><td>{{ r.detalhe }}</td><td><code>{{ r.hash[:10] }}</code></td></tr>
+    {% endfor %}
+  </table>
+  <p class="nota">Registros em destaque foram decisões tomadas pelo sistema, sem intervenção humana.</p>
+</section>
+{% endblock %}

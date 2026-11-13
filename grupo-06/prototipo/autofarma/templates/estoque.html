@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "_macros.html" import selo, assinatura %}
+{% block conteudo %}
+<h1>Estoque e logística</h1>
+
+<section class="cartao">
+  <h2>Lotes de insumo</h2>
+  <table>
+    <tr><th>Lote</th><th>Item</th><th>Fornecedor · lote</th><th>Validade</th><th class="num">Saldo</th><th>Situação</th><th></th></tr>
+    {% for l in insumos %}
+    <tr>
+      <td><a href="{{ url_for('web.rastreabilidade', insumo=l.codigo) }}">{{ l.codigo }}</a></td>
+      <td>{{ l.item.nome }}</td><td>{{ l.fornecedor }} · {{ l.lote_fornecedor }}</td>
+      <td class="{{ 'vencido' if l.validade < hoje }}">{{ l.validade.strftime('%d/%m/%Y') }}</td>
+      <td class="num">{{ (l.saldo)|numero }} {{ l.item.unidade }}</td><td>{{ selo(l.status) }}</td>
+      <td>{% if usuario.perfil == Perfil.ALMOXARIFE and l.status.name in ('REPROVADO', 'VENCIDO', 'BLOQUEADO') %}
+        <form method="post" action="{{ url_for('web.descartar_insumo', id=l.id) }}" class="linha mini">
+          {{ assinatura() }}<button class="perigo">Descartar</button></form>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="nota">Saldo aprovado e dentro da validade:
+    {% for i in itens if i.tipo != 'produto_acabado' %}{{ i.nome }} {{ (saldo_aprovado(i))|numero }} {{ i.unidade }}{{ ' · ' if not loop.last }}{% endfor %}</p>
+</section>
+
+{% if usuario.perfil == Perfil.ALMOXARIFE %}
+<section class="cartao">
+  <h2>Receber insumo</h2>
+  <form method="post" action="{{ url_for('web.receber_insumo') }}" class="linha">
+    <select name="item">{% for i in itens if i.tipo != 'produto_acabado' %}<option value="{{ i.id }}">{{ i.nome }} ({{ i.unidade }})</option>{% endfor %}</select>
+    <input name="fornecedor" placeholder="Fornecedor" required>
+    <input name="lote_fornecedor" placeholder="Lote do fornecedor" required>
+    <input name="validade" type="date" required>
+    <input name="quantidade" type="number" step="0.001" min="0.001" placeholder="Quantidade" required>
+    <button>Registrar recebimento</button>
+  </form>
+  <p class="nota">Todo insumo recebido entra em Quarentena e só é consumido depois da liberação pelo Controle de Qualidade (RN01).</p>
+</section>
+{% endif %}
+
+<section class="cartao">
+  <h2>Produto acabado</h2>
+  <table>
+    <tr><th>Lote</th><th>Produto</th><th>Validade</th><th class="num">Produzido</th><th class="num">Saldo</th><th>Situação</th><th></th></tr>
+    {% for l in lotes %}
+    <tr>
+      <td><a href="{{ url_for('web.rastreabilidade', lote=l.codigo) }}">{{ l.codigo }}</a></td><td>{{ l.produto.nome }}</td>
+      <td>{{ l.validade.strftime('%d/%m/%Y') }}</td><td class="num">{{ (l.quantidade_produzida)|numero }}</td>
+      <td class="num">{{ (l.saldo)|numero }} {{ l.produto.unidade }}</td><td>{{ selo(l.status) }}</td>
+      <td>{% if usuario.perfil == Perfil.ALMOXARIFE %}
+        {% if l.status.name in ('REPROVADO', 'VENCIDO', 'RECOLHIDO') %}
+        <form method="post" action="{{ url_for('web.descartar_lote', id=l.id) }}" class="linha mini">
+          {{ assinatura() }}<button class="perigo">Descartar</button></form>
+        {% elif l.status.name != 'DESCARTADO' %}
+        <form method="post" action="{{ url_for('web.expedir_lote', id=l.id) }}" class="linha mini">
+          <select name="cliente">{% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}</select>
+          <input name="quantidade" type="number" min="1" value="100" required>
+          <button>Expedir este lote</button></form>
+        {% endif %}{% endif %}</td>
+    </tr>
+    {% else %}<tr><td colspan="7" class="vazio">Nenhum lote fabricado ainda.</td></tr>{% endfor %}
+  </table>
+  {% if usuario.perfil == Perfil.ALMOXARIFE %}
+  <h3>Expedir por produto</h3>
+  <form method="post" action="{{ url_for('web.expedir') }}" class="linha">
+    <select name="produto">{% for p in produtos %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
+    <select name="cliente">{% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }} ({{ c.cidade }})</option>{% endfor %}</select>
+    <input name="quantidade" type="number" min="1" placeholder="Quantidade (cx)" required>
+    <button>Expedir</button>
+  </form>
+  <p class="nota">O sistema escolhe o lote que vence primeiro e recusa qualquer lote que não esteja Aprovado (RN02 e RN08).</p>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Últimas movimentações</h2>
+  <table>
+    <tr><th>Data</th><th>Tipo</th><th>Lote</th><th class="num">Quantidade</th><th>Autor</th></tr>
+    {% for m in movimentacoes %}
+    <tr><td>{{ m.data.strftime('%d/%m %H:%M:%S') }}</td><td>{{ m.tipo.value }}</td>
+      <td>{{ m.lote_insumo.codigo if m.lote_insumo else m.lote.codigo }}{% if m.lote_insumo and m.lote %} → {{ m.lote.codigo }}{% endif %}</td>
+      <td class="num">{{ (m.quantidade)|numero }}</td><td class="{{ 'sistema' if m.autor == 'SISTEMA' }}">{{ m.autor }}</td></tr>
+    {% else %}<tr><td colspan="5" class="vazio">Sem movimentações.</td></tr>{% endfor %}
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,65 @@
+@startuml 05-estado
+!include _estilo.iuml
+title Diagrama de Estado - ciclo de vida do Lote de produto
+skinparam state {
+  BackgroundColor #F7F9FB
+  BorderColor #33475B
+  BackgroundColor<<espera>> #FFE9C7
+  BackgroundColor<<fim>> #EEEEEE
+}
+hide empty description
+
+state "Planejado" as PLANEJADO
+state "Aguardando Material" as AG_MATERIAL
+state "Em Produção" as EM_PRODUCAO
+EM_PRODUCAO : entrada / iniciar etapa
+EM_PRODUCAO : leitura conforme / registrar
+EM_PRODUCAO : leitura em alerta / registrar alerta
+EM_PRODUCAO : etapa concluída / iniciar a próxima
+state "Aguardando Intervenção" as AG_INTERVENCAO <<espera>>
+AG_INTERVENCAO : entrada / pausar a linha e abrir intervenção
+AG_INTERVENCAO : após 15 min / escalonar ao Gerente
+state "Em Quarentena" as EM_QUARENTENA <<espera>>
+EM_QUARENTENA : entrada / calcular validade
+EM_QUARENTENA : saldo indisponível para expedição
+state "Aprovado" as APROVADO
+APROVADO : entrada / dar entrada no estoque
+APROVADO : expedir [saldo restante > 0] / baixar saldo
+state "Expedido" as EXPEDIDO
+state "Reprovado" as REPROVADO
+state "Recolhido" as RECOLHIDO
+state "Vencido" as VENCIDO
+state "Descartado" as DESCARTADO <<fim>>
+
+[*] --> PLANEJADO : criar ordem (Planejador)
+PLANEJADO -[#0B5C7A]-> EM_PRODUCAO : iniciar [insumos disponíveis]\n/ baixar por FEFO
+PLANEJADO -[#0B5C7A]-> AG_MATERIAL : iniciar [falta insumo aprovado]\n/ abrir intervenção
+AG_MATERIAL -[#0B5C7A]-> EM_PRODUCAO : [insumo aprovado disponível]\n/ baixar por FEFO
+EM_PRODUCAO -[#0B5C7A]-> AG_INTERVENCAO : leitura fora de especificação
+AG_INTERVENCAO -[#C77700,bold]-> EM_PRODUCAO : retomar ou reprocessar\n(Supervisor, assinatura)
+AG_INTERVENCAO -[#C77700,bold]-> REPROVADO : segregar\n(Supervisor, assinatura)
+EM_PRODUCAO -[#0B5C7A]-> EM_QUARENTENA : última etapa concluída
+EM_QUARENTENA -[#C77700,bold]-> APROVADO : aprovar\n(Analista de CQ, assinatura)
+EM_QUARENTENA -[#C77700,bold]-> REPROVADO : reprovar\n(Analista de CQ, assinatura)
+APROVADO -[#C77700,bold]-> EXPEDIDO : expedir [saldo restante = 0]\n(Almoxarife)
+APROVADO -[#0B5C7A]-> VENCIDO : [validade ultrapassada]
+APROVADO -[#C77700,bold]-> RECOLHIDO : recall\n(Gerente, assinatura)
+EXPEDIDO -[#C77700,bold]-> RECOLHIDO : recall\n(Gerente, assinatura)
+REPROVADO -[#C77700,bold]-> DESCARTADO : descartar\n(Almoxarife, assinatura)
+VENCIDO -[#C77700,bold]-> DESCARTADO : descartar
+RECOLHIDO -[#C77700,bold]-> DESCARTADO : descartar
+EXPEDIDO --> [*]
+DESCARTADO --> [*]
+
+note right of RECOLHIDO
+  Um recall iniciado a partir de um lote de insumo
+  leva a Recolhido todo lote que o consumiu,
+  em qualquer estado anterior a Descartado.
+end note
+
+legend bottom
+  |<color:#0B5C7A>━━━</color>| Transição automática: decidida pelo sistema |
+  |<color:#C77700>━━━</color>| Transição humana: exige pessoa autorizada |
+  |<back:#FFE9C7>      </back>| Estado em que o sistema aguarda uma pessoa |
+endlegend
+@enduml

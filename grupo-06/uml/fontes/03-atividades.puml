@@ -1,0 +1,73 @@
+@startuml 03-atividades
+!include _estilo.iuml
+title Diagrama de Atividades - fabricação de um lote, da ordem à liberação
+skinparam activity {
+  BackgroundColor #F7F9FB
+  BorderColor #33475B
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #33475B
+}
+skinparam swimlaneBorderColor #9AA7B4
+skinparam swimlaneTitleFontStyle bold
+
+|#FFF4DF|Planejador de Produção|
+start
+:Criar ordem de produção;
+|#E6F0F8|AutoFarma (sistema)|
+:Gerar o lote com código único;
+:Verificar insumos aprovados
+e dentro da validade;
+while (Há saldo de todos os insumos?) is (não)
+  :Colocar o lote em Aguardando Material
+  e abrir intervenção de falta;
+  |#FFF4DF|Analista de Controle de Qualidade|
+  :Liberar o insumo em quarentena
+  (assinatura eletrônica);
+  |#E6F0F8|AutoFarma (sistema)|
+endwhile (sim)
+:Baixar insumos por ordem de validade (FEFO)
+e registrar a genealogia do lote;
+repeat
+  :Iniciar a próxima etapa do roteiro;
+  repeat
+    :Receber a leitura dos sensores
+    e classificá-la;
+    if (Classificação?) then (Fora de Especificação)
+      :Pausar a linha e
+      abrir intervenção de desvio;
+      |#FFF4DF|Supervisor de Produção|
+      :Analisar o desvio e
+      assinar a decisão;
+      |#E6F0F8|AutoFarma (sistema)|
+      if (Decisão assinada?) then (Segregar)
+        :Marcar o lote
+        como Reprovado;
+        stop
+      elseif (Reprocessar) then
+        :Zerar os ciclos
+        da etapa;
+      else (Retomar)
+        :Retomar a linha;
+      endif
+    elseif (Alerta) then
+      :Registrar alerta no painel;
+    else (Conforme)
+    endif
+  repeat while (Ciclos da etapa completos?) is (não) not (sim)
+  :Concluir a etapa;
+repeat while (Há outra etapa no roteiro?) is (sim) not (não)
+:Colocar o lote Em Quarentena;
+|#FFF4DF|Analista de Controle de Qualidade|
+:Analisar o lote e os desvios registrados;
+:Assinar o parecer;
+|#E6F0F8|AutoFarma (sistema)|
+if (Parecer assinado?) then (Aprovado)
+  :Dar entrada do produto no estoque;
+  :Lote Aprovado: disponível para expedição;
+  stop
+else (Reprovado)
+  :Marcar o lote como Reprovado
+  (segue para descarte);
+  stop
+endif
+@enduml

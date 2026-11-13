@@ -1,0 +1,49 @@
+@startuml 04a-sequencia-inicio-da-ordem
+!include _estilo.iuml
+title Diagrama de Sequência A - início da ordem com baixa automática de insumos\n(integração Produção e Estoque: RF01 a RF05)
+skinparam sequence {
+  ParticipantBackgroundColor #F7F9FB
+  ParticipantBorderColor #33475B
+  LifeLineBorderColor #7A8896
+  ActorBorderColor #33475B
+}
+autonumber
+
+actor "Planejador\nde Produção" as PLA
+boundary "Interface web\n(rotas)" as WEB
+control "Serviço de\nProdução" as PRO
+control "Serviço de\nEstoque" as EST
+entity "Lote" as LOTE
+entity "LoteInsumo" as LI
+control "Auditoria" as AUD
+
+PLA -> WEB : criar ordem (fórmula)
+WEB -> PRO : criar_ordem(usuario, formula)
+PRO -> LOTE ** : criar (status = PLANEJADO)
+PRO -> AUD : registrar(planejador, CRIAR_ORDEM)
+WEB -> PRO : iniciar_ordem(lote)
+PRO -> EST : verificar_disponibilidade(formula)
+EST -> LI : consultar lotes APROVADOS,\ncom saldo e dentro da validade
+LI --> EST : saldos por item
+EST --> PRO : lista de faltas
+
+alt lista de faltas vazia
+  PRO -> EST : baixar_insumos_fefo(lote)
+  loop para cada item da fórmula
+    EST -> LI : baixar saldo do lote\nque vence primeiro
+    EST -> LOTE : registrar ConsumoInsumo\n(genealogia)
+  end
+  EST -> AUD : registrar(SISTEMA, BAIXAR_INSUMOS_FEFO)
+  PRO -> LOTE : status = EM_PRODUCAO;\niniciar a primeira etapa
+  PRO -> AUD : registrar(SISTEMA, INICIAR_PRODUCAO)
+  WEB --> PLA : "O sistema assumiu a\ncondução do lote"
+else falta algum insumo
+  PRO -> LOTE : status = AGUARDANDO_MATERIAL;\nabrir Intervencao (FALTA_MATERIAL)
+  PRO -> AUD : registrar(SISTEMA, SUSPENDER_POR_FALTA)
+  WEB --> PLA : lote aguardando material
+end
+note over PRO, EST
+  Toda a sequência ocorre em uma única transação (RNF07):
+  ou a baixa e a mudança de estado são gravadas juntas, ou nenhuma.
+end note
+@enduml

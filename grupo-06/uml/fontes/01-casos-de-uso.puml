@@ -1,0 +1,82 @@
+@startuml 01-casos-de-uso
+!include _estilo.iuml
+title Diagrama de Casos de Uso - AutoFarma
+left to right direction
+skinparam usecase {
+  BackgroundColor HUMANO
+  BorderColor #9A6A00
+  BackgroundColor<<auto>> AUTO
+  BorderColor<<auto>> #0B5C7A
+}
+skinparam actorStyle awesome
+hide stereotype
+
+actor "Almoxarife" as ALM
+actor "Supervisor\nde Produção" as SUP
+actor "Planejador\nde Produção" as PLA
+actor "Gerente\nda Qualidade" as GER
+actor "Analista de Controle\nde Qualidade" as CQ
+actor "Temporizador" as TMP
+actor "Sensores\nda Linha" as SEN
+
+rectangle "AutoFarma" {
+  package "Qualidade e Rastreabilidade" {
+    usecase "UC14 Liberar ou reprovar\ninsumo em quarentena" as UC14
+    usecase "UC15 Aprovar ou reprovar\nlote de produto" as UC15
+    usecase "UC16 Consultar\nrastreabilidade" as UC16
+    usecase "UC17 Iniciar recall" as UC17
+    usecase "UC18 Bloquear saldos e\nlistar clientes afetados" as UC18 <<auto>>
+    usecase "UC19 Consultar trilha\nde auditoria" as UC19
+  }
+  package "Gestão de Estoque e Logística" {
+    usecase "UC08 Receber insumo\n(entra em quarentena)" as UC08
+    usecase "UC09 Expedir produto\nacabado" as UC09
+    usecase "UC10 Selecionar lote por\nvalidade e recusar\nnão aprovado" as UC10 <<auto>>
+    usecase "UC11 Descartar lote" as UC11
+    usecase "UC12 Bloquear lotes\nvencidos" as UC12 <<auto>>
+    usecase "UC13 Dar entrada do produto\naprovado no estoque" as UC13 <<auto>>
+  }
+  package "Gestão de Produção" {
+    usecase "UC01 Criar ordem\nde produção" as UC01
+    usecase "UC02 Verificar e baixar\ninsumos por validade (FEFO)" as UC02 <<auto>>
+    usecase "UC03 Processar leitura\nda linha" as UC03 <<auto>>
+    usecase "UC04 Pausar a linha e\nabrir intervenção" as UC04 <<auto>>
+    usecase "UC05 Decidir intervenção\nde desvio" as UC05
+    usecase "UC06 Escalonar intervenção\nnão atendida" as UC06 <<auto>>
+    usecase "UC07 Acompanhar\npainel da linha" as UC07
+  }
+}
+
+PLA -- UC01
+PLA -- UC07
+SUP -- UC05
+SUP -- UC07
+ALM -- UC08
+ALM -- UC09
+ALM -- UC11
+UC14 -- CQ
+UC15 -- CQ
+UC16 -- CQ
+UC16 -- GER
+UC17 -- GER
+UC19 -- GER
+UC03 -- SEN
+UC06 -- TMP
+UC12 -- TMP
+
+UC01 ..> UC02 : <<include>>
+UC04 ..> UC03 : <<extend>>\n[leitura fora de\nespecificação]
+UC09 ..> UC10 : <<include>>
+UC18 <.. UC17 : <<include>>
+UC17 .> UC16 : <<extend>>
+UC13 .> UC15 : <<extend>>\n[lote aprovado]
+UC05 -[hidden]- UC06
+UC08 -[hidden]- UC12
+UC11 -[hidden]- UC13
+
+legend bottom right
+  |<back:#FFE9C7>      </back>| Caso de uso executado por uma pessoa |
+  |<back:#DCECF7>      </back>| Caso de uso executado pelo sistema, sem intervenção humana |
+  | RN07 | UC05, UC11, UC14, UC15 e UC17 incluem a assinatura eletrônica (senha e justificativa) |
+endlegend
+@enduml

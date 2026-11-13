@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import selo, assinatura %}
+{% block conteudo %}
+<h1>Controle de Qualidade</h1>
+{% set analista = usuario.perfil == Perfil.ANALISTA_CQ %}
+{% if not analista %}<p class="nota">As liberações são exclusivas do Analista de Controle de Qualidade (RN13).</p>{% endif %}
+
+<section class="cartao">
+  <h2>Lotes de produto em quarentena</h2>
+  {% for l in lotes %}
+  <article class="intervencao">
+    <header><strong>{{ l.codigo }}</strong> {{ selo(l.status) }}
+      <span class="sub">{{ l.produto.nome }} · {{ (l.quantidade_produzida)|numero }} {{ l.produto.unidade }}</span></header>
+    {# RN09: o analista vê os desvios e as decisões antes de liberar #}
+    {% set desvios = l.intervencoes|selectattr('tipo.name', 'equalto', 'DESVIO_PROCESSO')|list %}
+    {% if desvios %}
+    <p><strong>{{ desvios|length }} desvio(s) durante a fabricação:</strong></p>
+    <ul>{% for i in desvios %}<li>{{ i.motivo }}<br><span class="sub">Decisão de {{ i.resolvida_por }}: {{ i.decisao.value }}. Justificativa: {{ i.justificativa }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="sub">Fabricação sem desvios de processo.</p>{% endif %}
+    <p><a href="{{ url_for('web.rastreabilidade', lote=l.codigo) }}">Ver registro completo do lote</a></p>
+    {% if analista %}
+    <form method="post" action="{{ url_for('web.avaliar_lote', id=l.id) }}" class="linha">
+      <select name="resultado"><option value="APROVADO">Aprovar</option><option value="REPROVADO">Reprovar</option></select>
+      {{ assinatura('Parecer da análise', 'observacao') }}<button>Assinar liberação</button>
+    </form>{% endif %}
+  </article>
+  {% else %}<p class="vazio">Nenhum lote aguardando análise.</p>{% endfor %}
+</section>
+
+<section class="cartao">
+  <h2>Insumos em quarentena</h2>
+  <table>
+    <tr><th>Lote</th><th>Item</th><th>Fornecedor · lote</th><th>Validade</th><th class="num">Quantidade</th><th></th></tr>
+    {% for l in insumos %}
+    <tr><td>{{ l.codigo }}</td><td>{{ l.item.nome }}</td><td>{{ l.fornecedor }} · {{ l.lote_fornecedor }}</td>
+      <td>{{ l.validade.strftime('%d/%m/%Y') }}</td><td class="num">{{ (l.saldo)|numero }} {{ l.item.unidade }}</td>
+      <td>{% if analista %}
+        <form method="post" action="{{ url_for('web.avaliar_insumo', id=l.id) }}" class="linha mini">
+          <select name="resultado"><option value="APROVADO">Liberar</option><option value="REPROVADO">Reprovar</option></select>
+          {{ assinatura('Parecer', 'observacao') }}<button>Assinar</button></form>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="6" class="vazio">Nenhum insumo em quarentena.</td></tr>{% endfor %}
+  </table>
+</section>
+{% endblock %}

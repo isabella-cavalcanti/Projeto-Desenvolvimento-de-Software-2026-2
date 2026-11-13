@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_macros.html" import selo, assinatura %}
+{% block conteudo %}
+<h1>Rastreabilidade e recall</h1>
+{% set gerente = usuario.perfil == Perfil.GERENTE_QUALIDADE %}
+
+<section class="cartao">
+  <form class="linha">
+    <label>Do produto para trás
+      <select name="lote" onchange="this.form.insumo.value='';this.form.submit()">
+        <option value="">escolha um lote de produto</option>
+        {% for l in lotes %}<option {{ 'selected' if para_tras and para_tras.lote.id == l.id }}>{{ l.codigo }}</option>{% endfor %}
+      </select></label>
+    <label>Do insumo para frente
+      <select name="insumo" onchange="this.form.lote.value='';this.form.submit()">
+        <option value="">escolha um lote de insumo</option>
+        {% for l in insumos %}<option value="{{ l.codigo }}" {{ 'selected' if para_frente and para_frente.lote_insumo.id == l.id }}>{{ l.codigo }} · {{ l.item.nome }}</option>{% endfor %}
+      </select></label>
+  </form>
+</section>
+
+{% if para_frente %}
+{% set li = para_frente.lote_insumo %}
+<section class="cartao">
+  <h2>{{ li.codigo }} · {{ li.item.nome }} {{ selo(li.status) }}</h2>
+  <p class="sub">{{ li.fornecedor }}, lote {{ li.lote_fornecedor }} · validade {{ li.validade.strftime('%d/%m/%Y') }}</p>
+  <div class="cadeia">
+    <div><h3>Lotes de produto que o consumiram</h3>
+      <ul>{% for l in para_frente.lotes %}<li><a href="{{ url_for('web.rastreabilidade', lote=l.codigo) }}">{{ l.codigo }}</a> {{ selo(l.status) }} · saldo {{ (l.saldo)|numero }} {{ l.produto.unidade }}</li>
+      {% else %}<li class="vazio">Nenhum lote consumiu este insumo.</li>{% endfor %}</ul></div>
+    <div><h3>Clientes que receberam</h3>
+      <ul>{% for e in para_frente.expedicoes %}<li>{{ e.cliente.nome }} ({{ e.cliente.cidade }}) · {{ (e.quantidade)|numero }} {{ e.lote.produto.unidade }} do {{ e.lote.codigo }} em {{ e.data.strftime('%d/%m/%Y') }}</li>
+      {% else %}<li class="vazio">Nada foi expedido.</li>{% endfor %}</ul></div>
+  </div>
+  {% if gerente and li.status.name != 'BLOQUEADO' %}
+  <form method="post" action="{{ url_for('web.iniciar_recall') }}" class="linha">
+    <input type="hidden" name="insumo" value="{{ li.id }}">
+    {{ assinatura('Motivo do recall', 'motivo') }}<button class="perigo">Iniciar recall deste insumo</button>
+  </form>
+  <p class="nota">A decisão é da Gerência da Qualidade. O bloqueio dos saldos e a lista de clientes são feitos pelo sistema (RN11).</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if para_tras %}
+{% set l = para_tras.lote %}
+<section class="cartao">
+  <h2>Registro do lote {{ l.codigo }} {{ selo(l.status) }}</h2>
+  <p class="sub">{{ l.produto.nome }} · ordem {{ l.ordem.numero }} criada por {{ l.ordem.criada_por }}</p>
+  <h3>Insumos consumidos (genealogia)</h3>
+  <table><tr><th>Lote de insumo</th><th>Item</th><th>Fornecedor · lote</th><th>Validade</th><th class="num">Consumido</th></tr>
+    {% for c in para_tras.consumos %}<tr>
+      <td><a href="{{ url_for('web.rastreabilidade', insumo=c.lote_insumo.codigo) }}">{{ c.lote_insumo.codigo }}</a></td>
+      <td>{{ c.lote_insumo.item.nome }}</td><td>{{ c.lote_insumo.fornecedor }} · {{ c.lote_insumo.lote_fornecedor }}</td>
+      <td>{{ c.lote_insumo.validade.strftime('%d/%m/%Y') }}</td><td class="num">{{ (c.quantidade)|numero }} {{ c.lote_insumo.item.unidade }}</td></tr>
+    {% else %}<tr><td colspan="5" class="vazio">Nenhum insumo baixado ainda.</td></tr>{% endfor %}</table>
+  <h3>Etapas e leituras</h3>
+  <table><tr><th>Etapa</th><th>Situação</th><th class="num">Leituras</th><th class="num">Alertas</th><th class="num">Fora de especificação</th><th class="num">Reprocessos</th></tr>
+    {% for e in para_tras.etapas %}<tr><td>{{ e.etapa_padrao.nome }}</td><td>{{ e.status.value }}</td>
+      <td class="num">{{ e.leituras|length }}</td>
+      <td class="num">{{ e.leituras|selectattr('classificacao.name', 'equalto', 'ALERTA')|list|length }}</td>
+      <td class="num">{{ e.leituras|selectattr('classificacao.name', 'equalto', 'FORA_DE_ESPECIFICACAO')|list|length }}</td>
+      <td class="num">{{ e.reprocessos }}</td></tr>{% endfor %}</table>
+  <h3>Intervenções humanas</h3>
+  <ul>{% for i in para_tras.intervencoes %}<li><strong>{{ i.tipo.value }}:</strong> {{ i.motivo }}<br>
+    <span class="sub">{% if i.pendente %}{{ i.status.value }}, aguardando decisão{% else %}{{ i.decisao.value }}, por {{ i.resolvida_por }} em {{ i.resolvida_em.strftime('%d/%m %H:%M') }}. {{ i.justificativa }}{% endif %}</span></li>
+    {% else %}<li class="vazio">Nenhuma intervenção neste lote.</li>{% endfor %}</ul>
+  <h3>Análise de qualidade</h3>
+  <ul>{% for a in para_tras.analises %}<li>{{ a.resultado.value }} por {{ a.analista }} em {{ a.assinada_em.strftime('%d/%m/%Y %H:%M') }}. {{ a.observacao }}</li>
+    {% else %}<li class="vazio">Lote ainda não avaliado.</li>{% endfor %}</ul>
+  <h3>Expedições</h3>
+  <ul>{% for e in para_tras.expedicoes %}<li>{{ e.cliente.nome }} ({{ e.cliente.cidade }}) · {{ (e.quantidade)|numero }} {{ l.produto.unidade }} em {{ e.data.strftime('%d/%m/%Y') }}</li>
+    {% else %}<li class="vazio">Nada expedido.</li>{% endfor %}</ul>
+  {% if gerente and l.status.name in ('APROVADO', 'EXPEDIDO') %}
+  <form method="post" action="{{ url_for('web.iniciar_recall') }}" class="linha">
+    <input type="hidden" name="lote" value="{{ l.id }}">
+    {{ assinatura('Motivo do recall', 'motivo') }}<button class="perigo">Iniciar recall deste lote</button>
+  </form>{% endif %}
+</section>
+{% endif %}
+
+{% if recalls %}
+<section class="cartao">
+  <h2>Recalls registrados</h2>
+  <table><tr><th>Data</th><th>Origem</th><th>Motivo</th><th>Lotes bloqueados</th><th>Iniciado por</th></tr>
+    {% for r in recalls %}<tr><td>{{ r.iniciado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ r.origem_lote_insumo.codigo if r.origem_lote_insumo else r.origem_lote.codigo }}</td><td>{{ r.motivo }}</td>
+      <td>{{ r.lotes_afetados|map(attribute='codigo')|join(', ') or 'nenhum lote de produto' }}</td><td>{{ r.iniciado_por }}</td></tr>{% endfor %}
+  </table>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,219 @@
+@startuml 02-classes
+!include _estilo.iuml
+title Diagrama de Classes - AutoFarma
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #F7F9FB
+  BorderColor #33475B
+}
+skinparam packageStyle rectangle
+hide empty methods
+top to bottom direction
+
+package "Estoque e Logística" #EAF4EC {
+  abstract class Item {
+    codigo : String
+    nome : String
+    unidade : String
+    estoqueMinimo : Float
+  }
+  class MateriaPrima
+  class MaterialEmbalagem
+  class ProdutoAcabado {
+    validadeMeses : Integer
+  }
+  class LoteInsumo {
+    codigo : String
+    fornecedor : String
+    loteFornecedor : String
+    validade : Date
+    quantidadeRecebida : Float
+    saldo : Float
+    status : StatusEstoque
+  }
+  class MovimentacaoEstoque {
+    tipo : TipoMovimentacao
+    quantidade : Float
+    data : DateTime
+    autor : String
+  }
+  class Expedicao {
+    quantidade : Float
+    data : DateTime
+  }
+  class Cliente {
+    nome : String
+    cidade : String
+  }
+  enum StatusEstoque {
+    QUARENTENA
+    APROVADO
+    REPROVADO
+    BLOQUEADO
+    VENCIDO
+    DESCARTADO
+  }
+}
+
+package "Produção" #E6F0F8 {
+  class Formula {
+    versao : String
+    rendimento : Float
+  }
+  class ItemFormula {
+    quantidade : Float
+  }
+  class EtapaPadrao {
+    ordem : Integer
+    nome : String
+    ciclosNecessarios : Integer
+  }
+  class ParametroControle {
+    nome : String
+    unidade : String
+    alertaMin : Float
+    alertaMax : Float
+    especMin : Float
+    especMax : Float
+    classificar(valor) : Classificacao
+  }
+  class OrdemProducao {
+    numero : String
+    criadaEm : DateTime
+    criadaPor : String
+  }
+  class Lote {
+    codigo : String
+    status : StatusLote
+    quantidadeProduzida : Float
+    saldo : Float
+    fabricadoEm : Date
+    validade : Date
+    etapaAtual() : EtapaProducao
+  }
+  class EtapaProducao {
+    status : StatusEtapa
+    ciclos : Integer
+    reprocessos : Integer
+    iniciadaEm : DateTime
+    concluidaEm : DateTime
+  }
+  class Leitura {
+    valor : Float
+    classificacao : Classificacao
+    registradaEm : DateTime
+  }
+  class Intervencao {
+    tipo : TipoIntervencao
+    motivo : String
+    status : StatusIntervencao
+    abertaEm : DateTime
+    decisao : Decisao
+    justificativa : String
+    resolvidaPor : String
+    resolvidaEm : DateTime
+  }
+  class ConsumoInsumo {
+    quantidade : Float
+  }
+  enum StatusLote {
+    PLANEJADO
+    AGUARDANDO_MATERIAL
+    EM_PRODUCAO
+    AGUARDANDO_INTERVENCAO
+    EM_QUARENTENA
+    APROVADO
+    EXPEDIDO
+    REPROVADO
+    RECOLHIDO
+    VENCIDO
+    DESCARTADO
+  }
+  enum Classificacao {
+    CONFORME
+    ALERTA
+    FORA_DE_ESPECIFICACAO
+  }
+  enum Decisao {
+    RETOMAR
+    REPROCESSAR
+    SEGREGAR
+    MATERIAL_DISPONIVEL
+  }
+}
+
+package "Qualidade" #FBF1DD {
+  class AnaliseQualidade {
+    resultado : Resultado
+    observacao : String
+    analista : String
+    assinadaEm : DateTime
+  }
+  class Recall {
+    motivo : String
+    iniciadoPor : String
+    iniciadoEm : DateTime
+  }
+}
+
+package "Transversal" #F0ECF8 {
+  class Usuario {
+    nome : String
+    login : String
+    senhaHash : String
+    perfil : Perfil
+    conferirSenha(senha) : Boolean
+  }
+  class RegistroAuditoria {
+    dataHora : DateTime
+    autor : String
+    acao : String
+    entidade : String
+    detalhe : String
+    hashAnterior : String
+    hash : String
+  }
+  class Alerta {
+    tipo : String
+    mensagem : String
+    criadoEm : DateTime
+  }
+  enum Perfil {
+    PLANEJADOR
+    SUPERVISOR
+    ANALISTA_CQ
+    ALMOXARIFE
+    GERENTE_QUALIDADE
+  }
+}
+
+Item <|-- MateriaPrima
+Item <|-- MaterialEmbalagem
+Item <|-- ProdutoAcabado
+LoteInsumo "*" --> "1" Item : é lote de
+MovimentacaoEstoque "*" --> "0..1" LoteInsumo
+MovimentacaoEstoque "*" --> "0..1" Lote
+Expedicao "*" --> "1" Cliente : destinada a
+Lote "1" o-- "*" Expedicao
+
+Formula "*" --> "1" ProdutoAcabado : produz
+Formula "1" *-- "1..*" ItemFormula
+ItemFormula "*" --> "1" Item
+Formula "1" *-- "1..*" EtapaPadrao : roteiro
+EtapaPadrao "1" *-- "1..*" ParametroControle
+OrdemProducao "*" --> "1" Formula : segue
+OrdemProducao "1" *-- "1" Lote : gera
+Lote "1" *-- "1..*" EtapaProducao
+EtapaProducao "*" --> "1" EtapaPadrao : executa
+EtapaProducao "1" *-- "*" Leitura
+Leitura "*" --> "1" ParametroControle : mede
+Lote "1" *-- "*" Intervencao
+Intervencao "0..1" --> "0..1" Leitura : causada por
+Lote "1" *-- "*" ConsumoInsumo : genealogia
+ConsumoInsumo "*" --> "1" LoteInsumo : consome
+
+AnaliseQualidade "*" --> "0..1" Lote : avalia
+AnaliseQualidade "*" --> "0..1" LoteInsumo : avalia
+Recall "*" --> "0..1" LoteInsumo : origem
+Recall "*" --> "1..*" Lote : bloqueia
+@enduml

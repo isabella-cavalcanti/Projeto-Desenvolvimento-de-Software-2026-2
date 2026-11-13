@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}AutoFarma{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+</head>
+<body>
+{% if usuario %}
+<header class="topo">
+  <a class="marca" href="{{ url_for('web.painel') }}">AutoFarma</a>
+  <nav>
+    <a href="{{ url_for('web.painel') }}">Linha</a>
+    <a href="{{ url_for('web.ordens') }}">Ordens</a>
+    <a href="{{ url_for('web.ver_estoque') }}">Estoque</a>
+    <a href="{{ url_for('web.ver_qualidade') }}">Qualidade</a>
+    <a href="{{ url_for('web.rastreabilidade') }}">Rastreabilidade</a>
+    <a href="{{ url_for('web.ver_auditoria') }}">Auditoria</a>
+  </nav>
+  {# RNF06: intervenção pendente visível em qualquer tela, a um clique #}
+  <a class="pendencias {{ 'ativa' if pendentes }}" href="{{ url_for('web.painel') }}#intervencoes">
+    {{ pendentes|length }} intervenç{{ 'ão' if pendentes|length == 1 else 'ões' }} pendente{{ '' if pendentes|length == 1 else 's' }}
+  </a>
+  <span class="quem">{{ usuario.nome }} · {{ usuario.perfil.value }}
+    <a href="{{ url_for('web.logout') }}">sair</a></span>
+</header>
+{% endif %}
+<main>
+  {% for categoria, mensagem in get_flashed_messages(with_categories=true) %}
+    <p class="aviso {{ categoria }}">{{ mensagem }}</p>
+  {% endfor %}
+  {% block conteudo %}{% endblock %}
+</main>
+</body>
+</html>

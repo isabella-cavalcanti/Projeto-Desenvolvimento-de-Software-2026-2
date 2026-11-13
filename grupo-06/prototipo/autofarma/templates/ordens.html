@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import selo %}
+{% block conteudo %}
+<h1>Ordens de produção</h1>
+
+<section class="cartao">
+  <h2>Nova ordem</h2>
+  {% if usuario.perfil == Perfil.PLANEJADOR %}
+  <form method="post" class="linha">
+    <select name="formula">
+      {% for f in formulas %}<option value="{{ f.id }}">{{ f.produto.nome }} · fórmula v{{ f.versao }} · {{ (f.rendimento)|numero }} {{ f.produto.unidade }} por lote</option>{% endfor %}
+    </select>
+    <button>Criar ordem e entregar à linha</button>
+  </form>
+  <p class="nota">A partir daqui o sistema verifica o estoque, baixa os insumos por ordem de validade e conduz as etapas.</p>
+  {% else %}<p class="nota">Somente o Planejador de Produção cria ordens.</p>{% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Ordens</h2>
+  <table>
+    <tr><th>Ordem</th><th>Lote</th><th>Produto</th><th>Criada por</th><th>Situação do lote</th><th></th></tr>
+    {% for o in ordens %}
+    <tr><td>{{ o.numero }}</td><td>{{ o.lote.codigo }}</td><td>{{ o.formula.produto.nome }}</td>
+      <td>{{ o.criada_por }}</td><td>{{ selo(o.lote.status) }}</td>
+      <td><a href="{{ url_for('web.rastreabilidade', lote=o.lote.codigo) }}">rastrear</a></td></tr>
+    {% else %}<tr><td colspan="6" class="vazio">Nenhuma ordem criada.</td></tr>{% endfor %}
+  </table>
+</section>
+{% endblock %}

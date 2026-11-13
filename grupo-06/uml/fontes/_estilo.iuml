@@ -1,0 +1,16 @@
+' Estilo comum aos diagramas do AutoFarma
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam ArrowColor #33475B
+skinparam ArrowFontSize 12
+skinparam roundCorner 8
+skinparam TitleFontSize 17
+skinparam TitleFontStyle bold
+skinparam LegendBackgroundColor #F7F9FB
+skinparam LegendBorderColor #C9D3DD
+skinparam NoteBackgroundColor #FFF8E1
+skinparam NoteBorderColor #E0C777
+!define AUTO #DCECF7
+!define HUMANO #FFE9C7

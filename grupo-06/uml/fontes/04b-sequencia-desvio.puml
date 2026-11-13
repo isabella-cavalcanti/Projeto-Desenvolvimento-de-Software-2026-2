@@ -1,0 +1,54 @@
+@startuml 04b-sequencia-desvio
+!include _estilo.iuml
+title Diagrama de Sequência B - leitura fora de especificação:\npausa automática e decisão humana (RF06, RF08, RF09)
+skinparam sequence {
+  ParticipantBackgroundColor #F7F9FB
+  ParticipantBorderColor #33475B
+  LifeLineBorderColor #7A8896
+  ActorBorderColor #33475B
+}
+autonumber
+
+actor "Sensores\nda Linha" as SEN
+boundary "API REST" as API
+control "Serviço de\nProdução" as PRO
+entity "Parametro\nControle" as PAR
+entity "Lote" as LOTE
+entity "Intervencao" as INT
+control "Auditoria" as AUD
+boundary "Interface web\n(painel)" as WEB
+actor "Supervisor\nde Produção" as SUP
+
+== O sistema decide sozinho ==
+SEN -> API : POST /api/leituras\n(lote, parâmetro, valor)
+API -> PRO : processar_leitura(lote, parametro, valor)
+PRO -> PAR : classificar(valor)
+PAR --> PRO : FORA_DE_ESPECIFICACAO
+PRO -> LOTE : status = AGUARDANDO_INTERVENCAO
+PRO -> INT ** : criar (DESVIO_PROCESSO, motivo, leitura)
+PRO -> AUD : registrar(SISTEMA, PAUSAR_LINHA)
+API --> SEN : 201 (lote Aguardando Intervenção)
+
+SEN -> API : POST /api/leituras (nova leitura)
+API -> PRO : processar_leitura(...)
+PRO --> API : recusa (RN05: linha pausada)
+API --> SEN : 409
+
+== O sistema aguarda uma pessoa ==
+WEB --> SUP : intervenção pendente visível em qualquer tela
+SUP -> WEB : decisão, justificativa e senha
+WEB -> PRO : resolver_intervencao(usuario, intervencao,\ndecisao, senha, justificativa)
+PRO -> AUD : exigir_perfil(SUPERVISOR)
+PRO -> AUD : exigir_assinatura(senha, justificativa)
+
+alt decisão = RETOMAR
+  PRO -> LOTE : status = EM_PRODUCAO
+else decisão = REPROCESSAR
+  PRO -> LOTE : zerar ciclos da etapa;\nstatus = EM_PRODUCAO
+else decisão = SEGREGAR
+  PRO -> LOTE : status = REPROVADO
+end
+PRO -> INT : status = RESOLVIDA\n(decisão, justificativa, autor)
+PRO -> AUD : registrar(supervisor, RESOLVER_INTERVENCAO)
+WEB --> SUP : decisão registrada
+@enduml

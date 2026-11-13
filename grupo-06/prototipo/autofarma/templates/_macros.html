@@ -1,0 +1,8 @@
+{% macro selo(status) %}<span class="selo s-{{ status.name|lower }}">{{ status.value }}</span>{% endmacro %}
+
+{# Assinatura eletrônica (RN07): justificativa e nova confirmação da senha #}
+{% macro assinatura(rotulo='Justificativa', campo='justificativa') %}
+  <input name="{{ campo }}" placeholder="{{ rotulo }}" required>
+  <input name="senha" type="password" placeholder="Senha (assinatura)" required autocomplete="off">
+{% endmacro %}
+

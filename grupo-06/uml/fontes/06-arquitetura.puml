@@ -1,0 +1,57 @@
+@startuml 06-arquitetura
+!include _estilo.iuml
+title Arquitetura em camadas - AutoFarma
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #33475B
+}
+skinparam packageStyle rectangle
+top to bottom direction
+
+actor "Usuários\n(5 perfis)" as USR
+actor "Sensores da linha\n(sistema supervisório)" as SEN
+
+package "Camada de Apresentação" #FFF4DF {
+  [Painel da linha] as P1
+  [Telas de Ordens, Estoque,\nQualidade, Rastreabilidade\ne Auditoria] as P2
+}
+package "Camada de Aplicação" #E6F0F8 {
+  [Rotas web\n(sessão e perfis)] as A1
+  [API REST\n/api/leituras] as A2
+}
+package "Camada de Negócio" #EAF4EC {
+  [Serviço de Produção\n(motor autônomo)] as N1
+  [Serviço de Estoque\ne Logística] as N2
+  [Serviço de Qualidade\n(liberação, rastreio, recall)] as N3
+  [Auditoria e\nassinatura eletrônica] as N4
+}
+package "Camada de Integração" #F0ECF8 {
+  [Simulador de sensores\n(protótipo)] as I1
+  [Conector do supervisório\n(evolução)] as I2
+}
+package "Camada de Dados" #EEEEEE {
+  database "Banco relacional\n(SQLite no protótipo,\nPostgreSQL na evolução)" as D1
+}
+
+USR --> P1
+USR --> P2
+P1 --> A1
+P2 --> A1
+SEN ..> I2
+I1 --> A2
+I2 ..> A2
+A1 --> N1
+A1 --> N2
+A1 --> N3
+A2 --> N1
+N1 --> N2 : reserva e baixa\nde insumos
+N3 --> N2 : entrada do\nproduto aprovado
+N1 --> N4
+N2 --> N4
+N3 --> N4
+N1 --> D1
+N2 --> D1
+N3 --> D1
+N4 --> D1
+@enduml
