@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import assinatura %}
+{% block conteudo %}
+<h1>Cadastros</h1>
+{% include "_cadmenu.html" %}
+<section class="cartao">
+  <h2>Fórmulas-mestras</h2>
+  <table>
+    <tr><th>Produto</th><th>Versão</th><th class="num">Rendimento por lote</th><th class="num">Insumos</th><th class="num">Etapas</th><th></th></tr>
+    {% for f in formulas %}
+    <tr><td>{{ f.produto.nome }}</td><td>v{{ f.versao }}</td><td class="num">{{ f.rendimento|numero }} {{ f.produto.unidade }}</td>
+      <td class="num">{{ f.itens|length }}</td><td class="num">{{ f.etapas|length }}</td>
+      <td><a href="{{ url_for('cadastros.formula', id=f.id) }}">abrir fórmula, roteiro e limites</a></td></tr>
+    {% else %}<tr><td colspan="6" class="vazio">Nenhuma fórmula cadastrada.</td></tr>{% endfor %}
+  </table>
+  {% if usuario.perfil == Perfil.GERENTE_QUALIDADE and sem_formula %}
+  <h3>Nova fórmula</h3>
+  <form method="post" action="{{ url_for('cadastros.criar_formula') }}" class="linha"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <select name="produto">{% for p in sem_formula %}<option value="{{ p.id }}">{{ p.nome }}</option>{% endfor %}</select>
+    <input name="rendimento" placeholder="Rendimento por lote" required size="16">
+    {{ assinatura() }}<button>Criar fórmula</button>
+  </form>{% endif %}
+  <p class="nota">Fórmula, roteiro e limites de processo são alterados somente pela Gerência da Qualidade, com assinatura eletrônica. Cada alteração gera uma nova versão.</p>
+</section>
+{% endblock %}

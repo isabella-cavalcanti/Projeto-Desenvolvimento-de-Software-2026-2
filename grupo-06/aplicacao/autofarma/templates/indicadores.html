@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import selo %}
+{% block conteudo %}
+<h1>Indicadores</h1>
+<div class="kpis">
+  <div class="kpi"><strong>{{ i.lotes_total }}</strong><span>lotes criados</span></div>
+  <div class="kpi"><strong>{{ '%.0f%%'|format(i.taxa_aprovacao) if i.taxa_aprovacao is not none else 'sem dados' }}</strong><span>de aprovação pelo Controle de Qualidade ({{ i.lotes_concluidos }} lote{{ '' if i.lotes_concluidos == 1 else 's' }} concluído{{ '' if i.lotes_concluidos == 1 else 's' }})</span></div>
+  <div class="kpi"><strong>{{ i.desvios_total }}</strong><span>desvios de processo ({{ i.desvios_abertos }} em aberto)</span></div>
+  <div class="kpi"><strong>{% if i.tempo_medio_resposta is none %}sem dados{% elif i.tempo_medio_resposta < 1 %}{{ (i.tempo_medio_resposta * 60)|round|int }} s{% else %}{{ i.tempo_medio_resposta|round(1)|numero }} min{% endif %}</strong><span>tempo médio até a decisão humana</span></div>
+</div>
+
+<div class="duas iguais">
+<section class="cartao">
+  <h2>Lotes por situação</h2>
+  <table>{% for s, n in i.lotes_por_status %}<tr><td>{{ selo(s) }}</td><td class="num">{{ n }}</td></tr>
+    {% else %}<tr><td class="vazio">Nenhum lote.</td></tr>{% endfor %}</table>
+</section>
+<section class="cartao">
+  <h2>Leituras da linha</h2>
+  <table><tr><th>Classificação</th><th class="num">Leituras</th><th class="num">Participação</th></tr>
+    {% for c, n, pct in i.leituras %}<tr><td>{{ selo(c) }}</td><td class="num">{{ n }}</td><td class="num">{{ '%.1f'|format(pct)|replace('.', ',') }}%</td></tr>{% endfor %}</table>
+  <p class="sub">{{ i.leituras_total }} leituras recebidas.</p>
+</section>
+<section class="cartao">
+  <h2>Desvios por etapa</h2>
+  <table>{% for etapa, n in i.desvios_por_etapa %}<tr><td>{{ etapa }}</td><td class="num">{{ n }}</td></tr>
+    {% else %}<tr><td class="vazio">Nenhum desvio registrado.</td></tr>{% endfor %}</table>
+  <h3>Decisões tomadas</h3>
+  <table>{% for d, n in i.desvios_por_decisao %}<tr><td>{{ d }}</td><td class="num">{{ n }}</td></tr>
+    {% else %}<tr><td class="vazio">Nenhuma decisão registrada.</td></tr>{% endfor %}</table>
+</section>
+<section class="cartao">
+  <h2>Expedido por cliente</h2>
+  <table>{% for c, q in i.expedido_por_cliente %}<tr><td>{{ c }}</td><td class="num">{{ q|numero }}</td></tr>
+    {% else %}<tr><td class="vazio">Nenhuma expedição.</td></tr>{% endfor %}</table>
+</section>
+</div>
+
+<section class="cartao">
+  <h2>Estoque de insumos</h2>
+  <table><tr><th>Item</th><th class="num">Saldo aprovado</th><th class="num">Estoque mínimo</th><th>Situação</th></tr>
+    {% for x in i.insumos %}<tr><td>{{ x.item.nome }}</td><td class="num">{{ x.saldo|numero }} {{ x.item.unidade }}</td>
+      <td class="num">{{ x.item.estoque_minimo|numero }}</td>
+      <td><span class="selo {{ 's-reprovado' if x.abaixo else 's-aprovado' }}">{{ 'Abaixo do mínimo' if x.abaixo else 'Adequado' }}</span></td></tr>{% endfor %}
+  </table>
+</section>
+
+<div class="duas iguais">
+<section class="cartao">
+  <h2>Lotes de insumo que vencem em até 90 dias</h2>
+  <table>{% for l in i.a_vencer %}<tr><td>{{ l.codigo }}</td><td>{{ l.item.nome }}</td><td>{{ l.validade.strftime('%d/%m/%Y') }}</td><td class="num">{{ l.saldo|numero }} {{ l.item.unidade }}</td></tr>
+    {% else %}<tr><td class="vazio">Nenhum.</td></tr>{% endfor %}</table>
+</section>
+<section class="cartao">
+  <h2>Saldo bloqueado aguardando descarte</h2>
+  <table>{% for l in i.bloqueados %}<tr><td>{{ l.codigo }}</td><td>{{ l.item.nome }}</td><td>{{ selo(l.status) }}</td><td class="num">{{ l.saldo|numero }} {{ l.item.unidade }}</td></tr>
+    {% else %}<tr><td class="vazio">Nenhum.</td></tr>{% endfor %}</table>
+</section>
+</div>
+{% endblock %}

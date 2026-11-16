@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Cadastros</h1>
+{% include "_cadmenu.html" %}
+{% set admin = usuario.perfil == Perfil.ADMINISTRADOR %}
+<section class="cartao">
+  <h2>Usuários</h2>
+  {% if not admin %}<p class="nota">Somente o Administrador do Sistema gerencia usuários.</p>{% endif %}
+  <table>
+    <tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Situação</th>{% if admin %}<th>Ações</th>{% endif %}</tr>
+    {% for u in usuarios %}
+    <tr><td>{{ u.nome }}</td><td>{{ u.login }}</td><td>{{ u.perfil.value }}</td>
+      <td><span class="selo {{ 's-aprovado' if u.ativo else 's-descartado' }}">{{ 'Ativo' if u.ativo else 'Inativo' }}</span></td>
+      {% if admin %}<td>
+        <form method="post" action="{{ url_for('cadastros.alterar_usuario', id=u.id) }}" class="linha mini"><input type="hidden" name="csrf" value="{{ csrf() }}">
+          <select name="perfil">{% for p in Perfil %}<option value="{{ p.name }}" {{ 'selected' if p == u.perfil }}>{{ p.value }}</option>{% endfor %}</select>
+          <button name="acao" value="perfil">Mudar perfil</button>
+          <input name="nova_senha" type="password" placeholder="Nova senha" autocomplete="new-password">
+          <button name="acao" value="senha">Redefinir senha</button>
+          {% if u.ativo %}<button name="acao" value="desativar" class="perigo">Desativar</button>
+          {% else %}<button name="acao" value="reativar">Reativar</button>{% endif %}
+        </form></td>{% endif %}</tr>
+    {% endfor %}
+  </table>
+  {% if admin %}
+  <h3>Novo usuário</h3>
+  <form method="post" action="{{ url_for('cadastros.criar_usuario') }}" class="linha"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input name="nome" placeholder="Nome completo" required size="28"><input name="login" placeholder="Usuário" required>
+    <select name="perfil">{% for p in Perfil %}<option value="{{ p.name }}">{{ p.value }}</option>{% endfor %}</select>
+    <input name="senha" type="password" placeholder="Senha (mín. 8 caracteres)" required autocomplete="new-password">
+    <button>Criar usuário</button>
+  </form>
+  {% endif %}
+  <p class="nota">Usuários não são excluídos, apenas desativados, para preservar a trilha de auditoria (RN17).</p>
+</section>
+{% endblock %}

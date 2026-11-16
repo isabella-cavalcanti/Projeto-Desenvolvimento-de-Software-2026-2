@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Registro do lote {{ r.lote.codigo }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}"></head>
+<body class="impressao">
+{% set l = r.lote %}
+<main>
+  <p class="nao-imprimir"><button onclick="window.print()">Imprimir ou salvar em PDF</button></p>
+  <h1>Registro do lote {{ l.codigo }}</h1>
+  <table class="ficha">
+    <tr><th>Produto</th><td>{{ l.produto.nome }}</td><th>Situação</th><td>{{ l.status.value }}</td></tr>
+    <tr><th>Ordem de produção</th><td>{{ l.ordem.numero }}, criada por {{ l.ordem.criada_por }} em {{ l.ordem.criada_em.strftime('%d/%m/%Y %H:%M') }}</td>
+        <th>Fórmula</th><td>versão {{ l.ordem.formula.versao }}</td></tr>
+    <tr><th>Fabricação</th><td>{{ l.fabricado_em.strftime('%d/%m/%Y') if l.fabricado_em else 'em andamento' }}</td>
+        <th>Validade</th><td>{{ l.validade.strftime('%d/%m/%Y') if l.validade else 'a definir' }}</td></tr>
+    <tr><th>Quantidade produzida</th><td>{{ l.quantidade_produzida|numero }} {{ l.produto.unidade }}</td>
+        <th>Saldo</th><td>{{ l.saldo|numero }} {{ l.produto.unidade }}</td></tr>
+  </table>
+
+  <h2>1. Insumos consumidos</h2>
+  <table><tr><th>Lote de insumo</th><th>Item</th><th>Fornecedor e lote</th><th>Validade</th><th class="num">Consumido</th></tr>
+    {% for c in r.consumos %}<tr><td>{{ c.lote_insumo.codigo }}</td><td>{{ c.lote_insumo.item.nome }}</td>
+      <td>{{ c.lote_insumo.fornecedor }}, {{ c.lote_insumo.lote_fornecedor }}</td><td>{{ c.lote_insumo.validade.strftime('%d/%m/%Y') }}</td>
+      <td class="num">{{ c.quantidade|numero }} {{ c.lote_insumo.item.unidade }}</td></tr>
+    {% else %}<tr><td colspan="5">Nenhum insumo baixado.</td></tr>{% endfor %}</table>
+
+  <h2>2. Etapas de fabricação e leituras</h2>
+  {% for e in r.etapas %}
+  <h3>{{ e.etapa_padrao.ordem }}. {{ e.etapa_padrao.nome }}: {{ e.status.value }}{% if e.reprocessos %}, {{ e.reprocessos }} reprocesso(s){% endif %}</h3>
+  {% if e.leituras %}
+  <table><tr><th>Hora</th><th>Parâmetro</th><th class="num">Valor</th><th>Especificação</th><th>Classificação</th></tr>
+    {% for x in e.leituras %}<tr><td>{{ x.registrada_em.strftime('%d/%m %H:%M:%S') }}</td><td>{{ x.parametro.nome }}</td>
+      <td class="num">{{ x.valor|numero }} {{ x.parametro.unidade }}</td><td>{{ x.parametro.espec_min|numero }} a {{ x.parametro.espec_max|numero }}</td>
+      <td>{{ x.classificacao.value }}</td></tr>{% endfor %}</table>
+  {% else %}<p>Sem leituras.</p>{% endif %}
+  {% endfor %}
+
+  <h2>3. Intervenções</h2>
+  {% for i in r.intervencoes %}
+  <p><strong>{{ i.tipo.value }}</strong>, aberta pelo sistema em {{ i.aberta_em.strftime('%d/%m/%Y %H:%M:%S') }}: {{ i.motivo }}<br>
+    {% if i.pendente %}Situação: {{ i.status.value }}, aguardando decisão.
+    {% else %}Decisão: {{ i.decisao.value }}, por {{ i.resolvida_por }} em {{ i.resolvida_em.strftime('%d/%m/%Y %H:%M:%S') }}. Justificativa: {{ i.justificativa }}{% endif %}</p>
+  {% else %}<p>Nenhuma intervenção neste lote.</p>{% endfor %}
+
+  <h2>4. Liberação pelo Controle de Qualidade</h2>
+  {% for a in r.analises %}<p><strong>{{ a.resultado.value }}</strong> por {{ a.analista }} em {{ a.assinada_em.strftime('%d/%m/%Y %H:%M:%S') }}. Parecer: {{ a.observacao }}</p>
+  {% else %}<p>Lote ainda não avaliado.</p>{% endfor %}
+
+  <h2>5. Expedições</h2>
+  <table><tr><th>Data</th><th>Cliente</th><th>Cidade</th><th class="num">Quantidade</th></tr>
+    {% for e in r.expedicoes %}<tr><td>{{ e.data.strftime('%d/%m/%Y') }}</td><td>{{ e.cliente.nome }}</td><td>{{ e.cliente.cidade }}</td><td class="num">{{ e.quantidade|numero }} {{ l.produto.unidade }}</td></tr>
+    {% else %}<tr><td colspan="4">Nada expedido.</td></tr>{% endfor %}</table>
+
+  <p class="sub">Emitido pelo AutoFarma em {{ emitido_em.strftime('%d/%m/%Y %H:%M') }}.</p>
+</main>
+</body></html>

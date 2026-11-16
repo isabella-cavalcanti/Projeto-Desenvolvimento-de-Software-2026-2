@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_macros.html" import assinatura %}
+{% block conteudo %}
+<h1>Fórmula de {{ f.produto.nome }} <span class="selo">v{{ f.versao }}</span></h1>
+{% include "_cadmenu.html" %}
+{% set gerente = usuario.perfil == Perfil.GERENTE_QUALIDADE %}
+{% if not pronta %}<p class="aviso atencao">Fórmula incompleta: é preciso ter insumos e ao menos uma etapa, cada etapa com um parâmetro de controle. Enquanto isso, não é possível criar ordens deste produto.</p>{% endif %}
+{% if not gerente %}<p class="nota">Somente a Gerência da Qualidade altera fórmula, roteiro e limites (RN06).</p>{% endif %}
+
+<section class="cartao">
+  <h2>Insumos por lote</h2>
+  <p class="sub">Rendimento: {{ f.rendimento|numero }} {{ f.produto.unidade }} por lote</p>
+  <table>
+    <tr><th>Código</th><th>Insumo</th><th class="num">Quantidade por lote</th></tr>
+    {% for l in f.itens %}<tr><td>{{ l.item.codigo }}</td><td>{{ l.item.nome }}</td><td class="num">{{ l.quantidade|numero }} {{ l.item.unidade }}</td></tr>
+    {% else %}<tr><td colspan="3" class="vazio">Nenhum insumo.</td></tr>{% endfor %}
+  </table>
+  {% if gerente %}
+  <h3>Incluir ou alterar insumo</h3>
+  <form method="post" action="{{ url_for('cadastros.item_da_formula', id=f.id) }}" class="linha"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <select name="item">{% for i in insumos %}<option value="{{ i.id }}">{{ i.codigo }} · {{ i.nome }} ({{ i.unidade }})</option>{% endfor %}</select>
+    <input name="quantidade" placeholder="Quantidade (0 remove)" required size="18">
+    {{ assinatura() }}<button>Salvar insumo</button>
+  </form>
+  <h3>Alterar rendimento</h3>
+  <form method="post" action="{{ url_for('cadastros.rendimento', id=f.id) }}" class="linha"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input name="rendimento" value="{{ f.rendimento|numero }}" required size="12">
+    {{ assinatura() }}<button>Salvar rendimento</button>
+  </form>{% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Roteiro e limites de processo</h2>
+  {% for e in f.etapas %}
+  <h3>{{ e.ordem }}. {{ e.nome }} · {{ e.ciclos_necessarios }} ciclos de leitura</h3>
+  <table>
+    <tr><th>Parâmetro</th><th>Unidade</th><th class="num">Alerta mín.</th><th class="num">Alerta máx.</th><th class="num">Especificação mín.</th><th class="num">Especificação máx.</th>{% if gerente %}<th>Assinatura</th><th></th>{% endif %}</tr>
+    {% for p in e.parametros %}
+    <tr>{% if gerente %}<form method="post" action="{{ url_for('cadastros.parametro', id=e.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="parametro" value="{{ p.id }}">
+      <td><input name="nome" value="{{ p.nome }}" required size="26"></td><td><input name="unidade" value="{{ p.unidade }}" required size="4"></td>
+      <td class="num"><input name="alerta_min" value="{{ p.alerta_min|numero }}" size="6"></td><td class="num"><input name="alerta_max" value="{{ p.alerta_max|numero }}" size="6"></td>
+      <td class="num"><input name="espec_min" value="{{ p.espec_min|numero }}" size="6"></td><td class="num"><input name="espec_max" value="{{ p.espec_max|numero }}" size="6"></td>
+      <td class="linha mini">{{ assinatura() }}</td><td><button>Salvar</button></td></form>
+      {% else %}<td>{{ p.nome }}</td><td>{{ p.unidade }}</td><td class="num">{{ p.alerta_min|numero }}</td><td class="num">{{ p.alerta_max|numero }}</td>
+      <td class="num">{{ p.espec_min|numero }}</td><td class="num">{{ p.espec_max|numero }}</td>{% endif %}</tr>
+    {% else %}<tr><td colspan="8" class="vazio">Etapa sem parâmetro de controle.</td></tr>{% endfor %}
+  </table>
+  {% if gerente %}
+  <form method="post" action="{{ url_for('cadastros.parametro', id=e.id) }}" class="linha" style="margin-top:8px"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input name="nome" placeholder="Novo parâmetro" required size="22"><input name="unidade" placeholder="Un." required size="4">
+    <input name="alerta_min" placeholder="Alerta mín." required size="9"><input name="alerta_max" placeholder="Alerta máx." required size="9">
+    <input name="espec_min" placeholder="Espec. mín." required size="9"><input name="espec_max" placeholder="Espec. máx." required size="9">
+    {{ assinatura() }}<button>Incluir parâmetro</button>
+  </form>{% endif %}
+  {% else %}<p class="vazio">Nenhuma etapa no roteiro.</p>{% endfor %}
+  {% if gerente %}
+  <h3>Nova etapa (entra no fim do roteiro)</h3>
+  <form method="post" action="{{ url_for('cadastros.etapa', id=f.id) }}" class="linha"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input name="nome" placeholder="Nome da etapa" required size="24">
+    <input name="ciclos" type="number" min="1" value="3" title="Ciclos de leitura">
+    {{ assinatura() }}<button>Incluir etapa</button>
+  </form>{% endif %}
+  <p class="nota">A faixa de alerta deve ficar dentro da faixa de especificação (RN15). Não é possível alterar a fórmula com um lote dela na linha (RN16).</p>
+</section>
+{% endblock %}

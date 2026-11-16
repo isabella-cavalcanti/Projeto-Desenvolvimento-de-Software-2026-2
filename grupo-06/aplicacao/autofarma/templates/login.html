@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<section class="cartao login">
+  <h1>AutoFarma</h1>
+  <p class="sub">Gestão autônoma de linha de produção farmacêutica com intervenção humana</p>
+  <form method="post"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <label>Usuário
+      {% if usuarios %}
+      <select name="login">
+        {% for u in usuarios %}<option value="{{ u.login }}">{{ u.login }} ({{ u.perfil.value }})</option>{% endfor %}
+      </select>
+      {% else %}<input name="login" required autocomplete="username">{% endif %}
+    </label>
+    <label>Senha <input name="senha" type="password" required autofocus></label>
+    <button>Entrar</button>
+  </form>
+  {% if demo %}<p class="nota">Modo demonstração: todos os usuários usam a senha <code>farma1234</code>.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Cadastros</h1>
+{% include "_cadmenu.html" %}
+{% set almox = usuario.perfil == Perfil.ALMOXARIFE %}
+{% set gerente = usuario.perfil == Perfil.GERENTE_QUALIDADE %}
+{% set rotulos = {'materia_prima': 'Matéria-prima', 'embalagem': 'Embalagem', 'produto_acabado': 'Produto acabado'} %}
+
+<section class="cartao">
+  <h2>Itens</h2>
+  <table>
+    <tr><th>Código</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th class="num">Estoque mínimo</th><th></th></tr>
+    {% for i in itens %}
+    <tr><td>{{ i.codigo }}</td><td>{{ i.nome }}</td><td>{{ rotulos[i.tipo] }}</td><td>{{ i.unidade }}</td>
+      <td class="num">{{ i.estoque_minimo|numero }}</td>
+      <td>{% if (almox and i.tipo != 'produto_acabado') or (gerente and i.tipo == 'produto_acabado') %}
+        <a href="{{ url_for('cadastros.itens', editar=i.id) }}#form-item">editar</a>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  {% if almox or gerente %}
+  <h3 id="form-item">{{ 'Editar ' ~ editar.codigo if editar else 'Novo item' }}</h3>
+  <form method="post" action="{{ url_for('cadastros.salvar_item') }}" class="linha"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    {% if editar %}<input type="hidden" name="id" value="{{ editar.id }}">{% else %}
+    <label>Tipo <select name="tipo">
+      {% if almox %}<option value="materia_prima">Matéria-prima</option><option value="embalagem">Embalagem</option>{% endif %}
+      {% if gerente %}<option value="produto_acabado">Produto acabado</option>{% endif %}
+    </select></label>{% endif %}
+    <label>Código <input name="codigo" value="{{ editar.codigo if editar }}" required></label>
+    <label>Nome <input name="nome" value="{{ editar.nome if editar }}" required size="32"></label>
+    <label>Unidade <input name="unidade" value="{{ editar.unidade if editar }}" required size="5"></label>
+    <label>Estoque mínimo <input name="estoque_minimo" value="{{ editar.estoque_minimo|numero if editar else '0' }}" size="8"></label>
+    {% if gerente %}<label>Validade (meses) <input name="validade_meses" type="number" min="1" value="{{ editar.validade_meses if editar and editar.tipo == 'produto_acabado' else 24 }}"></label>{% endif %}
+    <button>Salvar item</button>
+    {% if editar %}<a href="{{ url_for('cadastros.itens') }}">cancelar</a>{% endif %}
+  </form>
+  {% endif %}
+  <p class="nota">Insumos são cadastrados pelo Almoxarife. Produtos acabados, pela Gerência da Qualidade.</p>
+</section>
+
+<section class="cartao">
+  <h2>Clientes</h2>
+  <table>
+    <tr><th>Nome</th><th>Cidade</th><th></th></tr>
+    {% for c in clientes %}
+    <tr>{% if almox %}<form method="post" action="{{ url_for('cadastros.salvar_cliente') }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="id" value="{{ c.id }}">
+      <td><input name="nome" value="{{ c.nome }}" required size="30"></td><td><input name="cidade" value="{{ c.cidade }}" required></td>
+      <td><button>Salvar</button></td></form>
+      {% else %}<td>{{ c.nome }}</td><td>{{ c.cidade }}</td><td></td>{% endif %}</tr>
+    {% endfor %}
+  </table>
+  {% if almox %}
+  <h3>Novo cliente</h3>
+  <form method="post" action="{{ url_for('cadastros.salvar_cliente') }}" class="linha"><input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input name="nome" placeholder="Nome" required size="30"><input name="cidade" placeholder="Cidade" required>
+    <button>Incluir cliente</button>
+  </form>{% endif %}
+</section>
+{% endblock %}

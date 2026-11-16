@@ -1,0 +1,22 @@
+# Implantação com PostgreSQL. Antes de subir, copie .env.exemplo para .env e troque os valores.
+services:
+  banco:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: autofarma
+      POSTGRES_USER: autofarma
+      POSTGRES_PASSWORD: ${BANCO_SENHA}
+    volumes:
+      - dados:/var/lib/postgresql/data
+  autofarma:
+    build: .
+    depends_on: [banco]
+    ports: ["5000:5000"]
+    environment:
+      AUTOFARMA_DEMO: "0"
+      AUTOFARMA_SECRET: ${AUTOFARMA_SECRET}
+      AUTOFARMA_API_CHAVE: ${AUTOFARMA_API_CHAVE}
+      AUTOFARMA_ADMIN_SENHA: ${AUTOFARMA_ADMIN_SENHA}
+      AUTOFARMA_BANCO: postgresql+psycopg2://autofarma:${BANCO_SENHA}@banco/autofarma
+volumes:
+  dados:
